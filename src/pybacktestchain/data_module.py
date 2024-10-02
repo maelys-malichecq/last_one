@@ -108,22 +108,46 @@ class Information:
        
         
 @dataclass
-class FirstTwoMoments(Information):
+#%% 
+
+#create a class that gives the minimum variance portfolio, with the same constraints and bounds
+#1-compute the information set
+#then do a pull request that the prof will validate
+
+class hedge_fund_vol(Information):
+        #Information is the big class with the following attributes
 
     def compute_portfolio(self, t:datetime, information_set):
         mu = information_set['expected_return']
         Sigma = information_set['covariance_matrix']
 
-        gamma = 1 # risk aversion parameter
+        '''like expected returns but not the vol so
+        i want to maximise: E(R) - γVar where γ is the risk aversion parameter'''
+
+        gamma = 0.1 # risk aversion parameter
         n = len(mu)
-        # objective function
-        obj = lambda x: -x.dot(mu) + gamma/2 * x.dot(Sigma).dot(x)
-        # constraints
-        cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+        # objective function (equivalent of what we are trying to solve)
+        obj = lambda x: -x.dot(Sigma).dot(x) + gamma * x.dot(mu)
+        #putting a - because we are maximising
+
+        # Constraints:
+        # 1. Portfolio's sum of weights equal 1
+        # 2. Portfolio's expected return should be greater than 10%
+        # 3. Portfolio Valut-at-Risk should be less than 1% of the portfolio value
+        alpha = 0.99  # Confidence level for VaR (1% significance)
+        z_alpha = -1.96
+
+        cons = [{'type': 'eq', 'fun': lambda x: np.sum(x) - 1},   # Sum of weights = 1
+                {'type': 'ineq', 'fun': lambda x: x.dot(mu)-0.1},     # Expected return > 10%
+                {'type': 'ineq', 'fun': lambda x: (z_alpha * np.sqrt(x.dot(Sigma).dot(x))) + 0.01}]  # VaR < 1% of portfolio
+    
+
         # bounds, allow short selling, +- inf 
         bounds = [(None, None)] * n
-        # initial guess, equal weights
-        x0 = np.ones(n) / n
+
+        # initial guess, equally weighted portfolio
+        x0 = np.ones(n) / n #have to make sure that the initial point is feasible (inside the constraint)
+        
         # minimize
         res = minimize(obj, x0, constraints=cons, bounds=bounds)
 
@@ -166,13 +190,9 @@ class FirstTwoMoments(Information):
         information_set['covariance_matrix'] = covariance_matrix
         information_set['companies'] = data.columns.to_numpy()
         return information_set
-
-
-
-
-
-
-
+    
+    #goal: when want to create a new investment strategy and want to backtest it, use this
+    #with the variables i want to use
 
 
 
