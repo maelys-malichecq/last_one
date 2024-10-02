@@ -1,3 +1,6 @@
 requests
 typing_extensions
 pandas
+scipy
+sec_cik_mapper
+yfinance

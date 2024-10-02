@@ -1,25 +1,26 @@
-
 import yfinance as yf
-import pandas as pd 
+import pandas as pd
 from sec_cik_mapper import StockMapper
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-import logging 
+import logging
 from scipy.optimize import minimize
 import numpy as np
+import pytz
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 
-#---------------------------------------------------------
+# ---------------------------------------------------------
 # Constants
-#---------------------------------------------------------
+# ---------------------------------------------------------
 
 UNIVERSE_SEC = list(StockMapper().ticker_to_cik.keys())
 
-#---------------------------------------------------------
+
+# ---------------------------------------------------------
 # Functions
-#---------------------------------------------------------
+# ---------------------------------------------------------
 
 # function that retrieves historical data on prices for a given stock
 def get_stock_data(ticker, start_date, end_date):
@@ -38,11 +39,12 @@ def get_stock_data(ticker, start_date, end_date):
     """
     stock = yf.Ticker(ticker)
     data = stock.history(start=start_date, end=end_date, auto_adjust=False, actions=False)
-    # as dataframe 
+    # as dataframe
     df = pd.DataFrame(data)
     df['ticker'] = ticker
     df.reset_index(inplace=True)
     return df
+
 
 def get_stocks_data(tickers, start_date, end_date):
     """get_stocks_data retrieves historical data on prices for a list of stocks
@@ -73,72 +75,81 @@ def get_stocks_data(tickers, start_date, end_date):
     data = pd.concat(dfs)
     return data
 
-#---------------------------------------------------------
-# Classes 
-#---------------------------------------------------------
 
-# Class that represents the data used in the backtest. 
+# ---------------------------------------------------------
+# Classes
+# ---------------------------------------------------------
+
+# Class that represents the data used in the backtest.
 @dataclass
 class DataModule:
     data: pd.DataFrame
 
-# Interface for the information set 
+
+# Interface for the information set
 @dataclass
 class Information:
-    s: timedelta # Time step (rolling window)
-    data_module: DataModule # Data module
+    s: timedelta  # Time step (rolling window)
+    data_module: DataModule  # Data module
     time_column: str = 'Date'
     company_column: str = 'ticker'
     adj_close_column: str = 'Close'
 
-    def slice_data(self, t : datetime):
-         # Get the data module 
+    def slice_data(self, t: datetime):
+        # Get the data module
         data = self.data_module.data
-        # Get the time step 
+        # Get the time step
         s = self.s
         # Get the data only between t-s and t
         data = data[(data[self.time_column] >= t - s) & (data[self.time_column] < t)]
         return data
 
-    def compute_information(self, t : datetime):  
+    def compute_information(self, t: datetime):
         pass
 
-    def compute_portfolio(self, t : datetime,  information_set : dict):
+    def compute_portfolio(self, t: datetime, information_set: dict):
         pass
-       
-        
+
+
 @dataclass
 class FirstTwoMoments(Information):
 
-    def compute_portfolio(self, t:datetime, information_set):
+    def compute_portfolio(self, t: datetime, information_set):
         mu = information_set['expected_return']
         Sigma = information_set['covariance_matrix']
 
-        gamma = 1 # risk aversion parameter
+        gamma = 1  # risk aversion parameter
         n = len(mu)
-        # objective function
-        obj = lambda x: -x.dot(mu) + gamma/2 * x.dot(Sigma).dot(x)
+
+        r_f = 0.01  # Example risk-free rate, e.g., 1%
+        # Objective function to maximize Sharpe ratio
+        obj = lambda x: -(x.dot(mu) - r_f) / np.sqrt(x.dot(Sigma).dot(x))
+        # obj = lambda x: -x.dot(mu) + gamma / 2 * x.dot(Sigma).dot(x)
+
         # constraints
-        cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
-        # bounds, allow short selling, +- inf 
-        bounds = [(None, None)] * n
+        # cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+        # changing the constraints to be dollar neutral
+        cons = ({'type': 'eq', 'fun': lambda x: np.sum(x)})
+
+        # bounds, allow short selling, +- inf
+        bounds = [(-1, 1)] * n
         # initial guess, equal weights
         x0 = np.ones(n) / n
         # minimize
         res = minimize(obj, x0, constraints=cons, bounds=bounds)
 
-        # prepare dictionary 
+        # prepare dictionary
         portfolio = {k: None for k in information_set['companies']}
 
         # if converged update
         if res.success:
             for i, company in enumerate(information_set['companies']):
                 portfolio[company] = res.x[i]
-        
+
         return portfolio
 
-    def compute_information(self, t : datetime):
-        # Get the data module 
+    def compute_information(self, t: datetime):
+        # Get the data module
         data = self.slice_data(t)
         # the information set will be a dictionary with the data
         information_set = {}
@@ -147,9 +158,10 @@ class FirstTwoMoments(Information):
         data = data.sort_values(by=[self.company_column, self.time_column])
 
         # expected return per company
-        data['return'] =  data.groupby(self.company_column)[self.adj_close_column].pct_change().mean()
-        
-        # expected return by company 
+        data['return'] = data.groupby(self.company_column)[self.adj_close_column].pct_change()
+        data = data.dropna(subset='return')
+
+        # expected return by company
         information_set['expected_return'] = data.groupby(self.company_column)['return'].mean().to_numpy()
 
         # covariance matrix
@@ -160,7 +172,7 @@ class FirstTwoMoments(Information):
         data = data.dropna(axis=0)
         # 2. compute the covariance matrix
         covariance_matrix = data.cov()
-        # convert to numpy matrix 
+        # convert to numpy matrix
         covariance_matrix = covariance_matrix.to_numpy()
         # add to the information set
         information_set['covariance_matrix'] = covariance_matrix
@@ -168,11 +180,23 @@ class FirstTwoMoments(Information):
         return information_set
 
 
+if __name__ == "__main__":
+    sd, ed = '2020-01-01', '2024-01-01'
+    timestep = 14
+    # First getting the data
+    df_data = get_stocks_data(['TSLA', 'NVDA', 'META', 'AMZN'], sd, ed)
+    # Then instantiating a class I'll reuse afterward
+    optim = FirstTwoMoments(
+        s=timedelta(days=timestep),
+        data_module=DataModule(df_data)
+    )
+    # Should be looping through all the dates between my sd & ed to construct a matrix of weights, only looking at one
+    # date here
+    # Getting the info set
+    ptf_date = pytz.timezone('America/New_York').localize(datetime(2020, 10, 1))
+    start_time = datetime.now()
+    date_information_set = optim.compute_information(ptf_date)
+    # Finally getting the weights
+    date_weights = optim.compute_portfolio(ptf_date, date_information_set)
 
-
-
-
-
-
-
-
+    print(f'Optimal weights computed in {datetime.now() - start_time}')
