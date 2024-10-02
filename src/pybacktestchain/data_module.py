@@ -110,25 +110,18 @@ class Information:
 @dataclass
 #%% 
 
-#create a class that gives the minimum variance portfolio, with the same constraints and bounds
-#1-compute the information set
-#then do a pull request that the prof will validate
+#create a class that give the expected return of a portfolio with a high volatility environment
 
 class hedge_fund_vol(Information):
-        #Information is the big class with the following attributes
 
     def compute_portfolio(self, t:datetime, information_set):
         mu = information_set['expected_return']
         Sigma = information_set['covariance_matrix']
 
-        '''like expected returns but not the vol so
-        i want to maximise: E(R) - γVar where γ is the risk aversion parameter'''
-
         gamma = 0.1 # risk aversion parameter
         n = len(mu)
         # objective function (equivalent of what we are trying to solve)
         obj = lambda x: -x.dot(Sigma).dot(x) + gamma * x.dot(mu)
-        #putting a - because we are maximising
 
         # Constraints:
         # 1. Portfolio's sum of weights equal 1
@@ -191,8 +184,6 @@ class hedge_fund_vol(Information):
         information_set['companies'] = data.columns.to_numpy()
         return information_set
     
-    #goal: when want to create a new investment strategy and want to backtest it, use this
-    #with the variables i want to use
 
 
 
