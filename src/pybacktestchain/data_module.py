@@ -168,7 +168,91 @@ class FirstTwoMoments(Information):
         return information_set
 
 
+@dataclass
+class VolTarget(Information):
 
+    def compute_portfolio(self, t:datetime, information_set):
+        mu = information_set['expected_return']
+        
+        ########################################
+        ########################################
+        ########################################
+        vol_target = information_set['volatility_target']
+        
+        ########################################
+        ########################################
+        ########################################
+        
+        Sigma = information_set['covariance_matrix']
+
+        gamma = 1 # risk aversion parameter
+        n = len(mu)
+        # objective function
+        obj = lambda x: -x.dot(mu) + gamma/2 * x.dot(Sigma).dot(x)
+        # constraints
+        cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+        
+        ########################################
+        ########################################
+        ########################################
+        # If a volatility target is provided, add a constraint on the portfolio volatility
+        if vol_target is not None:
+            cons.append({
+                'type': 'ineq',
+                'fun': lambda x: np.sqrt(x.dot(Sigma).dot(x)) - vol_target
+            })
+        
+        ########################################
+        ########################################
+        ########################################
+
+
+        # bounds, allow short selling, +- inf 
+        bounds = [(None, None)] * n
+        # initial guess, equal weights
+        x0 = np.ones(n) / n
+        # minimize
+        res = minimize(obj, x0, constraints=cons, bounds=bounds)
+
+        # prepare dictionary 
+        portfolio = {k: None for k in information_set['companies']}
+
+        # if converged update
+        if res.success:
+            for i, company in enumerate(information_set['companies']):
+                portfolio[company] = res.x[i]
+        
+        return portfolio
+
+    def compute_information(self, t : datetime):
+        # Get the data module 
+        data = self.slice_data(t)
+        # the information set will be a dictionary with the data
+        information_set = {}
+
+        # sort data by ticker and date
+        data = data.sort_values(by=[self.company_column, self.time_column])
+
+        # expected return per company
+        data['return'] =  data.groupby(self.company_column)[self.adj_close_column].pct_change().mean()
+        
+        # expected return by company 
+        information_set['expected_return'] = data.groupby(self.company_column)['return'].mean().to_numpy()
+
+        # covariance matrix
+
+        # 1. pivot the data
+        data = data.pivot(index=self.time_column, columns=self.company_column, values=self.adj_close_column)
+        # drop missing values
+        data = data.dropna(axis=0)
+        # 2. compute the covariance matrix
+        covariance_matrix = data.cov()
+        # convert to numpy matrix 
+        covariance_matrix = covariance_matrix.to_numpy()
+        # add to the information set
+        information_set['covariance_matrix'] = covariance_matrix
+        information_set['companies'] = data.columns.to_numpy()
+        return information_set
 
 
 
