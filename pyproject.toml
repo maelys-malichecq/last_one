@@ -7,10 +7,12 @@ license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 pandas = "^2.2.2"
 numpy = "^2.0.1"
 yfinance = "^0.2.41"
+sec-cik-mapper = "^2.1.0"
+scipy = "^1.14.1"
 
 [tool.poetry.dev-dependencies]
 
