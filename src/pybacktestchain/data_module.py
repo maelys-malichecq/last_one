@@ -14,8 +14,9 @@ logging.basicConfig(level=logging.INFO)
 #---------------------------------------------------------
 # Constants
 #---------------------------------------------------------
+# for the moment, we assume that the universe of companies is constant 
 
-UNIVERSE_SEC = list(StockMapper().ticker_to_cik.keys())
+UNIVERSE_SEC = list(StockMapper().ticker_to_cik.keys()) #we ask for the keys of the dictionnary SotckMapper
 
 #---------------------------------------------------------
 # Functions
@@ -41,8 +42,10 @@ def get_stock_data(ticker, start_date, end_date):
     # as dataframe 
     df = pd.DataFrame(data)
     df['ticker'] = ticker
-    df.reset_index(inplace=True)
+    df.reset_index(inplace=True) #on réinitialise l'index comme ça c'est pas les dates
     return df
+
+#print(get_stock_data('AAPL', '2000-01-01', '2020-12-31'))
 
 def get_stocks_data(tickers, start_date, end_date):
     """get_stocks_data retrieves historical data on prices for a list of stocks
@@ -82,7 +85,9 @@ def get_stocks_data(tickers, start_date, end_date):
 class DataModule:
     data: pd.DataFrame
 
-# Interface for the information set 
+# Interface for the information set  
+    ##Jean##  (an interface is a class that enable to create other classes easily.
+    ##Jean##  it's a class that can be called in another class)
 @dataclass
 class Information:
     s: timedelta # Time step (rolling window)
@@ -99,16 +104,17 @@ class Information:
         # Get the data only between t-s and t
         data = data[(data[self.time_column] >= t - s) & (data[self.time_column] < t)]
         return data
-
+    ## the 2 functions below will be modified depending on the backtest we want to do (we want to write them)
     def compute_information(self, t : datetime):  
         pass
 
     def compute_portfolio(self, t : datetime,  information_set : dict):
         pass
        
-        
+#get_stock_data("AAPL", "2020-01-01", "2024-01-01")
+
 @dataclass
-class FirstTwoMoments(Information):
+class FirstTwoMoments(Information): #inherite the information class computed just above
 
     def compute_portfolio(self, t:datetime, information_set):
         mu = information_set['expected_return']
@@ -117,13 +123,13 @@ class FirstTwoMoments(Information):
         gamma = 1 # risk aversion parameter
         n = len(mu)
         # objective function
-        obj = lambda x: -x.dot(mu) + gamma/2 * x.dot(Sigma).dot(x)
+        obj = lambda x: -x.dot(mu) + gamma/2 * x.dot(Sigma).dot(x) # x is the vector of weights : see the course of IMF for the matrices (we have a (- because we minimize))
         # constraints
-        cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+        cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1}) # we have an equality constraint, here sum(x) = 1 <=> sum(x) - 1 = 0, the sum of weights needs to equal 1
         # bounds, allow short selling, +- inf 
-        bounds = [(None, None)] * n
+        bounds = [(None, None)] * n    # no bound constraint here for all element
         # initial guess, equal weights
-        x0 = np.ones(n) / n
+        x0 = np.ones(n) / n     #at first, we have an equally weighted portfolio (make sure that the initial portfolio is feasible with our constraints)
         # minimize
         res = minimize(obj, x0, constraints=cons, bounds=bounds)
 
@@ -168,11 +174,80 @@ class FirstTwoMoments(Information):
         return information_set
 
 
+    #Minimum variance portfolio optimization
+    def compute_min_variance_portfolio(self, t: datetime, information_set):
+        mu = information_set['expected_return']
+        Sigma = information_set['covariance_matrix'] 
 
+        n = len(mu)
 
+        # minimize portfolio variance as an objective
+        obj = lambda x: x.dot(Sigma).dot(x)
 
+        cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
 
+        # Bounds: short selling is allowed
+        bounds = [(None, None)] * n
 
+        # Initial guess: equally weighted portfolio that will change when solving 
+        x0 = np.ones(n) / n
 
+        # Minimize the objective function subject to the constraints and bounds
+        res = minimize(obj, x0, constraints=cons, bounds=bounds)
 
+        # Debugging: print the result of the optimization to know if optim was successful or not
+        print("Optimization Result:")
+        print(f"Success: {res.success}")
+        print(f"Message: {res.message}")
 
+        #store results
+        portfolio = {k: None for k in information_set['companies']}
+
+        # If optimization success, update the portfolio weights
+        if res.success:
+            for i, company in enumerate(information_set['companies']):
+                portfolio[company] = res.x[i]
+        
+        return portfolio
+    
+    #Attemps to create a target return portfolio while minimizing variance
+    def compute_portfolio_tgt_return(self, t: datetime, information_set, target_return, tolerance):
+        mu = information_set['expected_return']
+        Sigma = information_set['covariance_matrix']
+
+        gamma = 1  # risk aversion parameter
+        n = len(mu)
+
+        # Objective function: minimize portfolio variance
+        obj = lambda x: gamma/2 * x.dot(Sigma).dot(x)
+
+        # Constraints:
+        cons = (
+            {'type': 'eq', 'fun': lambda x: np.sum(x) - 1},  # Weights must sum to 1
+            {'type': 'ineq', 'fun': lambda x: x.dot(mu) - (target_return - tolerance)},  # Ineq constraint works as follow: xxxx >= 0 so here Portfolio return >= (target_return - tolerance)
+            {'type': 'ineq', 'fun': lambda x: (target_return + tolerance) - x.dot(mu)}  # Portfolio return <= (target_return + tolerance)
+        )
+
+        # Bounds: short selling is allowed
+        bounds = [(None, None)] * n
+
+        # Initial guess: equally weighted portfolio
+        x0 = np.ones(n) / n  # Ensure the initial portfolio is feasible
+
+        # Minimize the objective function with constraints and bounds
+        res = minimize(obj, x0, constraints=cons, bounds=bounds)
+
+        # Debug: print the result of the optimization
+        print(f"Optimization success: {res.success}")
+        print(f"Optimization message: {res.message}")
+        print(f"Optimized weights: {res.x}")
+
+        # Prepare the portfolio dictionary to store results
+        portfolio = {k: None for k in information_set['companies']}
+
+        # If optimization converges, update the portfolio weights
+        if res.success:
+            for i, company in enumerate(information_set['companies']):
+                portfolio[company] = res.x[i]
+
+        return portfolio
