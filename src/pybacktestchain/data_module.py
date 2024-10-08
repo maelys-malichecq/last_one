@@ -120,21 +120,44 @@ class hedge_fund_vol(Information):
 
         gamma = 0.1 # risk aversion parameter
         n = len(mu)
-        # objective function (equivalent of what we are trying to solve)
-        obj = lambda x: -x.dot(Sigma).dot(x) + gamma * x.dot(mu)
+        # objective function
+        obj = lambda x: -x.dot(mu) + gamma/2 * x.dot(Sigma).dot(x) #Maximising the return while minimizing vol
+        '''We will use the CVaR (or Expected Shortfall) which is the weighted average of observations whose losses are greated than
+        the VaR'''
+
+        # Tail risk constraint: Compute CVaR (Expected Shortfall) using mu
+        '''Assumption that returns are normally distributed to be able to compute Var and CVar, otherwise would have to simulate
+        returns with Monte Carlo simulation'''
+
+        alpha = 0.95  # Confidence level for VaR and CVaR (95% confidence)
+        z_alpha = -1.96  # Critical value for 95% confidence level (VaR), we take the negative value as we want to find what is below the mean
+
+        def VaR_calculation(weights):
+            #Calculate the portfolio variance (volatility squared)
+            ptf_std= np.sqrt(weights.dot(Sigma).dot(weights))
+            #Calculating the portfolio's expected return
+            ptf_average = np.dot(mu, weights)
+            #Calculating Value-at-Risk (VaR) using mu and the portfolio variance
+            VaR = ptf_average + z_alpha * ptf_std  # VaR at 95% confidence
+            return VaR, ptf_std
+
+        def CVaR_calculation(weights):
+            #Calculate Conditional Value-at-Risk (CVaR or Expected Shortfall) using mu
+            VaR = VaR_calculation(weights)
+            #Since returns are assumed to be normally distributed, CVaR can be calculated
+            ptf_std = VaR_calculation(weights)[1]
+            #computing the expected shortfall ES
+            ES = VaR - (ptf_std(weights) * (np.exp(-z_alpha ** 2 / 2) / (alpha * np.sqrt(2 * np.pi))))
+            return ES
 
         # Constraints:
-        # 1. Portfolio's sum of weights equal 1
+        # 1. Sum of all weight should be equal to 1
         # 2. Portfolio's expected return should be greater than 10%
-        # 3. Portfolio Valut-at-Risk should be less than 1% of the portfolio value
-        alpha = 0.99  # Confidence level for VaR (1% significance)
-        z_alpha = -1.96
-
+        # 3. Portfolio Conditional Value-at-Risk should be less than 1% of the portfolio value
         cons = [{'type': 'eq', 'fun': lambda x: np.sum(x) - 1},   # Sum of weights = 1
                 {'type': 'ineq', 'fun': lambda x: x.dot(mu)-0.1},     # Expected return > 10%
-                {'type': 'ineq', 'fun': lambda x: (z_alpha * np.sqrt(x.dot(Sigma).dot(x))) + 0.01}]  # VaR < 1% of portfolio
+                {'type': 'ineq', 'fun': lambda x: 0.01 + CVaR_calculation(x)}]  # CVaR < 1% of portfolio value
     
-
         # bounds, allow short selling, +- inf 
         bounds = [(None, None)] * n
 
