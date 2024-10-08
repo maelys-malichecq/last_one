@@ -1,25 +1,26 @@
 #%%
-from pybacktestchain.market_data import MarketData
-market_data = MarketData()
-df = market_data.get_data("AAPL", "2020-01-01", "2021-01-01")
-#%%
-from pybacktestchain.strategy import MovingAverageCrossoverStrategy
-strategy = MovingAverageCrossoverStrategy(short_window=40, long_window=100)
+from pybacktestchain.data_module import get_stocks_data, UNIVERSE_SEC, DataModule, Information, FirstTwoMoments
+from datetime import timedelta
 
-from pybacktestchain.broker import SimulatorBroker
-broker = SimulatorBroker(initial_cash=100000, transaction_cost=0.01)
+# pick 10 random stocks
+import random
+random.seed(42)
+stocks = random.sample(UNIVERSE_SEC, 10)
 
-from pybacktestchain.backtest import Backtest
-from pybacktestchain.optimizer import MaximizeSharpeRatio
-from pybacktestchain.risk_manager import MaxDrawdownConstraint
+df = get_stocks_data(stocks, '2000-01-01', '2020-12-31')
 
-backtest = Backtest(strategy, market_data, broker, MaxDrawdownConstraint(max_dd=0.1), MaximizeSharpeRatio())
+# Initialize the DataModule
+data_module = DataModule(df)
 
+# Create the FirstTwoMoments object
+info = FirstTwoMoments(s = timedelta(days=360), 
+                       data_module = data_module,
+                       time_column='Date',
+                       company_column='ticker',
+                       adj_close_column='Adj Close')
+# %%
+t = df['Date'].max()
+information_set = info.compute_information(t)
+portfolio = info.compute_portfolio(t, information_set)
 
-backtest.run("AAPL", "2020-01-01", "2021-01-01")
-
-#%%
-    
-    
- 
-
+# %%
