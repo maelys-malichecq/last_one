@@ -1,5 +1,4 @@
 
-
 import yfinance as yf
 import pandas as pd 
 from sec_cik_mapper import StockMapper
@@ -109,7 +108,7 @@ class Information: #it is like a superclass in which we are going to store data
        
         
 @dataclass
-class CVaR_Optimization(Information): 
+class HF_Max_Vol(Information): 
 
     def compute_portfolio(self, t:datetime, information_set):
         mu = information_set['expected_return']
@@ -119,47 +118,26 @@ class CVaR_Optimization(Information):
         n = len(mu)
 
         # objective function (equivalent of what we are trying to solve)
-        obj = lambda x: obj = lambda x: -x.dot(mu) + gamma/2 * x.dot(Sigma).dot(x) #Maximising the return while minimizing vol
-
-
-        # Tail risk constraint: Compute CVaR (Expected Shortfall) using mu
-        '''Here we asssume returns are normally distributed so that we can compute Var and CVar with mu in sigma.
-        If not normally distributed, need to simulate returns with Monte Carlo'''
-        alpha = 0.95  # Confidence level for VaR/CVaR (99% confidence)
-        z_alpha = -1.96  # Critical value for 95% confidence level (VaR)
-
-        def calculate_var(weights):
-            #Calculate the portfolio variance (volatility squared)
-            portfolio_stddev= np.sqrt(weights.dot(Sigma).dot(weights))
-            #Calculate the portfolio's expected return
-            portfolio_mean = np.dot(mu, weights)
-            #Calculate Value-at-Risk (VaR) using mu and portfolio variance
-            VaR = portfolio_mean + z_alpha * portfolio_stddev  # VaR at 95% confidence
-            return VaR, portfolio_stddev
-
-        def calculate_cvar(weights):
-            #Calculate Conditional Value-at-Risk (CVaR or Expected Shortfall) using mu
-            VaR = calculate_var(weights)
-            # Since returns are assumed to be normally distributed, CVaR can be calculated analytically
-            portfolio_stddev = calculate_var(weights)[1]
-            ES = VaR - (portfolio_stddev(weights) * (np.exp(-z_alpha ** 2 / 2) / (alpha * np.sqrt(2 * np.pi))))
-            return ES
+        obj = lambda x: -x.dot(Sigma).dot(x) + gamma * x.dot(mu) #Maximising the vol of the portfolio
 
         # Constraints:
         # 1. Sum of all weight should be equal to 1
         # 2. Portfolio's expected return should be greater than 10%
-        # 3. Portfolio Conditional Value-at-Risk should be less than 1% of the portfolio value
+        # 3. Portfolio Valut-at-Risk should be less than 1% of the portfolio value
+
+        alpha = 0.99  # Confidence level for VaR (1% significance)
+        z_alpha = -1.96
 
         cons = [{'type': 'eq', 'fun': lambda x: np.sum(x) - 1},   # Sum of weights = 1
                 {'type': 'ineq', 'fun': lambda x: x.dot(mu)-0.1},     # Expected return > 10%
-                {'type': 'ineq', 'fun': lambda x: 0.01 + calculate_cvar(x)}]  # CVaR < 1% of portfolio value
+                {'type': 'ineq', 'fun': lambda x: (z_alpha * np.sqrt(x.dot(Sigma).dot(x))) + 0.01}]  # VaR < 1% of portfolio
     
 
         # bounds, allow short selling, +- inf 
         bounds = [(None, None)] * n
 
         # initial guess, equally weighted portfolio
-        x0 = np.ones(n) / n 
+        x0 = np.ones(n) / n #have to make sure that the initial point is feasible (inside the constraint)
         
         # minimize
         res = minimize(obj, x0, constraints=cons, bounds=bounds)
@@ -186,7 +164,7 @@ class CVaR_Optimization(Information):
         data['return'] =  data.groupby(self.company_column)[self.adj_close_column].pct_change().mean() 
         
         # expected return by company 
-        information_set['expected_return'] = data.groupby(self.company_column)['return'].mean().to_numpy() 
+        information_set['expected_return'] = data.groupby(self.company_column)['return'].mean().to_numpy() #I store in the information set, the expected returns using numpy
 
         # covariance matrix
 
@@ -202,6 +180,22 @@ class CVaR_Optimization(Information):
         information_set['covariance_matrix'] = covariance_matrix
         information_set['companies'] = data.columns.to_numpy()
         return information_set
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
