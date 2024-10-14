@@ -167,12 +167,73 @@ class FirstTwoMoments(Information):
         information_set['companies'] = data.columns.to_numpy()
         return information_set
 
+@dataclass
+class TargetReturnMinimumVariance(Information):
+    Rt: float  # target return
 
+    def compute_portfolio(self, t: datetime, information_set):
+        # extract the expected return vector and covariance matrix from the information set
+        mu = information_set['expected_return']
+        Sigma = information_set['covariance_matrix']
+        
+        # number of assets
+        n = len(mu)
 
+        # define the objective function: minimize portfolio variance (x.T @ Sigma @ x)
+        obj = lambda x: x.dot(Sigma).dot(x)
 
+        # constraints:
+        # 1. sum of portfolio weights must be 1
+        cons = [{'type': 'eq', 'fun': lambda x: np.sum(x) - 1}]
+        # 2. expected return of portfolio must be equal to the target return Rt
+        cons.append({'type': 'eq', 'fun': lambda x: x.dot(mu) - self.Rt})
 
+        # no bounds for now (allow short selling)
+        bounds = [(None, None)] * n
 
+        # initial guess for the optimization (equal weights)
+        x0 = np.ones(n) / n
 
+        # scipy's minimize function to solve the optimization problem
+        res = minimize(obj, x0, constraints=cons, bounds=bounds)
 
+        # prepare the portfolio dictionary to store optimal weights
+        portfolio = {company: None for company in information_set['companies']}
 
+        # if the optimizer was successful, assign the weights to each company
+        if res.success:
+            for i, company in enumerate(information_set['companies']):
+                portfolio[company] = res.x[i]
+        else:
+            logging.warning(f"Optimization did not converge at time {t}")
 
+        return portfolio
+
+    def compute_information(self, t: datetime):
+        # same implementation as in FirstTwoMoments class
+        data = self.slice_data(t)
+        information_set = {}
+
+        # sort data by ticker and date
+        data = data.sort_values(by=[self.company_column, self.time_column])
+
+        # compute returns
+        data['return'] = data.groupby(self.company_column)[self.adj_close_column].pct_change()
+
+        # compute expected return by company
+        information_set['expected_return'] = data.groupby(self.company_column)['return'].mean().to_numpy()
+
+        # pivot the data to create a matrix where rows are time points and columns are stock tickers
+        data = data.pivot(index=self.time_column, columns=self.company_column, values=self.adj_close_column)
+
+        # drop rows with missing values
+        data = data.dropna(axis=0)
+
+        # compute the covariance matrix of returns
+        covariance_matrix = data.cov().to_numpy()
+
+        # add expected returns, covariance matrix, and company names to the information set
+        information_set['covariance_matrix'] = covariance_matrix
+        information_set['companies'] = data.columns.to_numpy()
+
+        return information_set
