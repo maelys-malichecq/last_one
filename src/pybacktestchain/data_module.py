@@ -105,7 +105,7 @@ class Information:
         # Get the time step 
         s = self.s
         # Get the data only between t-s and t
-        data = data[(data[self.time_column] >= t - s) & (data[self.time_column] < t)]
+        data = data[(data[self.time_column] >= t - s) & (data[self.time_column] < t)] #time i consider btw s and t until time t
         return data
 
     def compute_information(self, t : datetime):  
@@ -114,7 +114,59 @@ class Information:
     def compute_portfolio(self, t : datetime,  information_set : dict):
         pass
        
+@dataclass
+class MinimumVariance(Information):
+    def compute_portfolio(self, t:datetime, information_set):
+        Sigma = information_set['covariance_matrix']
+
+        gamma = 1 # risk aversion parameter
+        n = len(mu)
+        # objective function
+        obj = lambda x: -x.dot(mu) + gamma/2 * x.dot(Sigma).dot(x)
+        # constraints
+        cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+        # bounds, allow short selling, +- inf 
+        bounds = [(None, None)] * n
+        # initial guess, equal weights
+        x0 = np.ones(n) / n
+        # minimize
+        res = minimize(obj, x0, constraints=cons, bounds=bounds)
+
+        # prepare dictionary 
+        portfolio = {k: None for k in information_set['companies']}
+
+        # if converged update
+        if res.success:
+            for i, company in enumerate(information_set['companies']):
+                portfolio[company] = res.x[i]
         
+        return portfolio
+
+    def compute_information(self, t : datetime): #now, we have a moment of time. What is the data that i technically know?
+        # Get the data module 
+        data = self.slice_data(t)
+        # the information set will be a dictionary with the data
+        information_set = {}
+
+        # sort data by ticker and date
+        data = data.sort_values(by=[self.company_column, self.time_column])
+
+        # covariance matrix
+
+        # 1. pivot the data
+        data = data.pivot(index=self.time_column, columns=self.company_column, values=self.adj_close_column)
+        # drop missing values
+        data = data.dropna(axis=0)
+        # 2. compute the covariance matrix
+        covariance_matrix = data.cov()
+        # convert to numpy matrix 
+        covariance_matrix = covariance_matrix.to_numpy()
+        # add to the information set
+        information_set['covariance_matrix'] = covariance_matrix
+        information_set['companies'] = data.columns.to_numpy()
+        return information_set
+
+
 @dataclass
 class FirstTwoMoments(Information):
     #### The easiest one 
@@ -145,7 +197,7 @@ class FirstTwoMoments(Information):
         
         return portfolio
 
-    def compute_information(self, t : datetime):
+    def compute_information(self, t : datetime): #now, we have a moment of time. What is the data that i technically know?
         # Get the data module 
         data = self.slice_data(t)
         # the information set will be a dictionary with the data
