@@ -22,11 +22,11 @@ class Position:
 @dataclass
 class Broker:
     cash: float 
-    positions: dict = None
-    transaction_log: pd.DataFrame = None
+    positions: dict = None # the current positions 
+    transaction_log: pd.DataFrame = None #the history of all positions taken
     entry_prices: dict = None
 
-    def __post_init__(self):
+    def __post_init__(self): #because we use dataclass we use post init and not init directly - when I define a class then i need to define a constructor 
         # Initialize positions as a dictionary of Position objects
         if self.positions is None:
             self.positions = {}
@@ -44,9 +44,9 @@ class Broker:
 
     def buy(self, ticker: str, quantity: int, price: float, date: datetime):
         """Executes a buy order for the specified ticker."""
-        total_cost = price * quantity
-        if self.cash >= total_cost:
-            self.cash -= total_cost
+        total_cost = price * quantity ## we can add fees, transaction fees if you want to make it more complexe
+        if self.cash >= total_cost: # do I have money for that 
+            self.cash -= total_cost # need to be substracted 
             if ticker in self.positions:
                 # Update existing position
                 position = self.positions[ticker]
@@ -65,7 +65,7 @@ class Broker:
         else:
             logging.warning(f"Not enough cash to buy {quantity} shares of {ticker} at {price}. Available cash: {self.cash}")
     
-    def sell(self, ticker: str, quantity: int, price: float, date: datetime):
+    def sell(self, ticker: str, quantity: int, price: float, date: datetime): # we do not have still the short sell, here it's only selling what I already have
         """Executes a sell order for the specified ticker."""
         if ticker in self.positions and self.positions[ticker].quantity >= quantity:
             position = self.positions[ticker]
@@ -102,7 +102,7 @@ class Broker:
     
     def execute_portfolio(self, portfolio: dict, prices: dict, date: datetime):
         """Executes the trades for the portfolio based on the generated weights."""
-        
+        ###### Pull request to have one instead of two loops 
         # First, handle all the sell orders to free up cash
         for ticker, weight in portfolio.items():
             price = prices.get(ticker)
@@ -122,21 +122,21 @@ class Broker:
                 self.sell(ticker, abs(quantity_to_trade), price, date)
         
         # Then, handle all the buy orders, checking if there's enough cash
-        for ticker, weight in portfolio.items():
-            price = prices.get(ticker)
-            if price is None:
-                logging.warning(f"Price for {ticker} not available on {date}")
-                continue
+        #for ticker, weight in portfolio.items():
+        #    price = prices.get(ticker)
+        #    if price is None:
+        #        logging.warning(f"Price for {ticker} not available on {date}")
+        #        continue
             
             # Calculate the desired quantity based on portfolio weight
-            total_value = self.get_portfolio_value(prices)
-            target_value = total_value * weight
-            current_value = self.positions.get(ticker, Position(ticker, 0, 0)).quantity * price
-            diff_value = target_value - current_value
-            quantity_to_trade = int(diff_value / price)
+        #    total_value = self.get_portfolio_value(prices)
+        #    target_value = total_value * weight
+        #    current_value = self.positions.get(ticker, Position(ticker, 0, 0)).quantity * price
+        #    diff_value = target_value - current_value
+        #    quantity_to_trade = int(diff_value / price)
             
             # Now, execute the buy trades (if quantity_to_trade is positive) and check if there's enough cash
-            if quantity_to_trade > 0:
+            elif quantity_to_trade > 0:
                 available_cash = self.get_cash_balance()
                 cost = quantity_to_trade * price
                 
@@ -154,14 +154,14 @@ class Broker:
         return self.transaction_log
 
 @dataclass
-class RebalanceFlag:
+class RebalanceFlag: #### to make returning boolean true or false - function of today
     def time_to_rebalance(self, t: datetime):
         pass 
 
 # Implementation of e.g. rebalancing at the end of each month
 @dataclass
 class EndOfMonth(RebalanceFlag):
-    def time_to_rebalance(self, t: datetime):
+    def time_to_rebalance(self, t: datetime): ##Change the function
         # Convert to pandas Timestamp for convenience
         pd_date = pd.Timestamp(t)
         # Get the last business day of the month
