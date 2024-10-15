@@ -110,7 +110,7 @@ class Information:
 @dataclass
 class FirstTwoMoments(Information):
 
-    def compute_portfolio(self, t:datetime, information_set):
+    def compute_portfolio(self, t:datetime, information_set,risk_free_rate=0.01):
         mu = information_set['expected_return']
         Sigma = information_set['covariance_matrix']
 
@@ -125,7 +125,7 @@ class FirstTwoMoments(Information):
         # initial guess, equal weights
         x0 = np.ones(n) / n
         # minimize
-        res = minimize(obj, x0, constraints=cons, bounds=bounds)
+        res = minimize(lambda x: -(x.dot(mu) - risk_free_rate) / np.sqrt(x.dot(Sigma).dot(x)),x0,constraints=cons,bounds=bounds)
 
         # prepare dictionary 
         portfolio = {k: None for k in information_set['companies']}
