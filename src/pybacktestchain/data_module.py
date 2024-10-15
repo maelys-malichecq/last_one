@@ -117,7 +117,7 @@ class Information:
 @dataclass
 class FirstTwoMoments(Information):
 
-    def compute_portfolio(self, t:datetime, information_set):
+    def compute_portfolio(self, t:datetime, information_set,risk_free_rate=0.01):
         mu = information_set['expected_return']
         Sigma = information_set['covariance_matrix']
         kurtosis = information_set['kurtosis']
