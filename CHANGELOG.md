@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v0.1.1 (2024-11-18)
+
+### Bug Fixes
+
+* fix: numba dependencies arrange ([`49cde8c`](https://github.com/jfimbett/pybacktestchain/commit/49cde8c5cb5b9c4346166cc1da3b6d8ae734fb09))
+
+
 ## v0.1.0 (2024-11-18)
 
 ### Bug Fixes
