@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v0.1.2 (2024-11-18)
+
+### Bug Fixes
+
+* fix: numpy dependencies ([`693bd4b`](https://github.com/jfimbett/pybacktestchain/commit/693bd4bdfbf2d7d720a3e4cee3e7c4e9db50472f))
+
+
 ## v0.1.1 (2024-11-18)
 
 ### Bug Fixes
