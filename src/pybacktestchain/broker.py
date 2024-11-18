@@ -2,6 +2,7 @@ import pandas as pd
 import logging
 from dataclasses import dataclass
 from datetime import datetime
+
 import os 
 import pickle
 from pybacktestchain.data_module import UNIVERSE_SEC, FirstTwoMoments, get_stocks_data, DataModule, Information
@@ -12,6 +13,7 @@ from numba import jit
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 from datetime import timedelta, datetime
+
 #---------------------------------------------------------
 # Classes
 #---------------------------------------------------------
@@ -56,6 +58,7 @@ class Broker:
         if self.transaction_log is None:
             self.transaction_log = pd.DataFrame(columns=['Date', 'Action', 'Ticker', 'Quantity', 'Price', 'Cash'])
     
+
         # Initialize the entry prices as a dictionary
         if self.entry_prices is None:
             self.entry_prices = {}
@@ -72,6 +75,7 @@ class Broker:
                 position.quantity = new_quantity
                 position.entry_price = new_entry_price
             else:
+
                 self.positions[ticker] = Position(ticker, quantity, price)
             self.log_transaction(date, 'BUY', ticker, quantity, price)
             self.entry_prices[ticker] = price
@@ -85,6 +89,7 @@ class Broker:
             position = self.positions[ticker]
             position.quantity -= quantity
             self.cash += price * quantity
+
             if position.quantity == 0:
                 del self.positions[ticker]
                 del self.entry_prices[ticker]
@@ -103,6 +108,7 @@ class Broker:
             'Price': price,
             'Cash': self.cash
         }])
+
         self.transaction_log = pd.concat([self.transaction_log, transaction], ignore_index=True)
 
     def get_cash_balance(self):
@@ -145,13 +151,13 @@ class Broker:
                 if self.verbose:
                     logging.warning(f"Price for {ticker} not available on {date}")
                 continue
-            
+      
             total_value = self.get_portfolio_value(prices)
             target_value = total_value * weight
             current_value = self.positions.get(ticker, Position(ticker, 0, 0)).quantity * price
             diff_value = target_value - current_value
             quantity_to_trade = int(diff_value / price)
-            
+           
             if quantity_to_trade > 0:
                 available_cash = self.get_cash_balance()
                 cost = quantity_to_trade * price

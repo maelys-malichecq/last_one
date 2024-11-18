@@ -782,6 +782,7 @@ files = [
 [package.extras]
 all = ["flake8 (>=7.1.1)", "mypy (>=1.11.2)", "pytest (>=8.3.2)", "ruff (>=0.6.2)"]
 
+
 [[package]]
 name = "importlib-resources"
 version = "6.4.5"
@@ -847,13 +848,17 @@ test = ["flaky", "ipyparallel", "pre-commit", "pytest (>=7.0)", "pytest-asyncio 
 
 [[package]]
 name = "ipython"
+
 version = "8.29.0"
+
 description = "IPython: Productive Interactive Computing"
 optional = false
 python-versions = ">=3.10"
 files = [
+
     {file = "ipython-8.29.0-py3-none-any.whl", hash = "sha256:0188a1bd83267192123ccea7f4a8ed0a78910535dbaa3f37671dca76ebd429c8"},
     {file = "ipython-8.29.0.tar.gz", hash = "sha256:40b60e15b22591450eef73e40a027cf77bd652e757523eebc5bd7c7c498290eb"},
+
 ]
 
 [package.dependencies]
@@ -1696,6 +1701,7 @@ numpy = ">=1.22,<2.1"
 
 [[package]]
 name = "numpy"
+
 version = "2.0.2"
 description = "Fundamental package for array computing in Python"
 optional = false
@@ -2712,6 +2718,7 @@ files = [
 
 [[package]]
 name = "scipy"
+
 version = "1.13.1"
 description = "Fundamental algorithms for scientific computing in Python"
 optional = false
@@ -2790,18 +2797,24 @@ win32 = ["pywin32"]
 
 [[package]]
 name = "setuptools"
+
 version = "75.2.0"
+
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 optional = false
 python-versions = ">=3.8"
 files = [
+
     {file = "setuptools-75.2.0-py3-none-any.whl", hash = "sha256:a7fcb66f68b4d9e8e66b42f9876150a3371558f98fa32222ffaa5bced76406f8"},
     {file = "setuptools-75.2.0.tar.gz", hash = "sha256:753bb6ebf1f465a1912e19ed1d41f403a79173a9acf66a42e7e6aec45c3c16ec"},
+
 ]
 
 [package.extras]
 check = ["pytest-checkdocs (>=2.4)", "pytest-ruff (>=0.2.1)", "ruff (>=0.5.2)"]
+
 core = ["importlib-metadata (>=6)", "importlib-resources (>=5.10.2)", "jaraco.collections", "jaraco.functools", "jaraco.text (>=3.7)", "more-itertools", "more-itertools (>=8.8)", "packaging", "packaging (>=24)", "platformdirs (>=2.6.2)", "tomli (>=2.0.1)", "wheel (>=0.43.0)"]
+
 cover = ["pytest-cov"]
 doc = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "pygments-github-lexers (==0.0.5)", "pyproject-hooks (!=1.1)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-favicon", "sphinx-inline-tabs", "sphinx-lint", "sphinx-notfound-page (>=1,<2)", "sphinx-reredirects", "sphinxcontrib-towncrier", "towncrier (<24.7)"]
 enabler = ["pytest-enabler (>=2.2)"]
@@ -2980,13 +2993,17 @@ test = ["argcomplete (>=3.0.3)", "mypy (>=1.7.0)", "pre-commit", "pytest (>=7.0,
 
 [[package]]
 name = "types-python-dateutil"
+
 version = "2.9.0.20241003"
+
 description = "Typing stubs for python-dateutil"
 optional = false
 python-versions = ">=3.8"
 files = [
+
     {file = "types-python-dateutil-2.9.0.20241003.tar.gz", hash = "sha256:58cb85449b2a56d6684e41aeefb4c4280631246a0da1a719bdbe6f3fb0317446"},
     {file = "types_python_dateutil-2.9.0.20241003-py3-none-any.whl", hash = "sha256:250e1d8e80e7bbc3a6c99b907762711d1a1cdd00e978ad39cb5940f6f0a87f3d"},
+
 ]
 
 [[package]]
@@ -3097,13 +3114,17 @@ test = ["websockets"]
 
 [[package]]
 name = "yfinance"
+
 version = "0.2.48"
+
 description = "Download market data from Yahoo! Finance API"
 optional = false
 python-versions = "*"
 files = [
+
     {file = "yfinance-0.2.48-py2.py3-none-any.whl", hash = "sha256:eda797145faa4536595eb629f869d3616e58ed7e71de36856b19f1abaef71a5b"},
     {file = "yfinance-0.2.48.tar.gz", hash = "sha256:1434cd8bf22f345fa27ef1ed82bfdd291c1bb5b6fe3067118a94e256aa90c4eb"},
+
 ]
 
 [package.dependencies]
@@ -3126,4 +3147,6 @@ repair = ["scipy (>=1.6.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
+
 content-hash = "a17000413fd4c4e58d029a8f26d2cae45689ccac7427a3b79e09710c66531f03"
+

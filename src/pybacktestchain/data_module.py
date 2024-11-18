@@ -94,6 +94,7 @@ class Information:
     adj_close_column: str = 'Close'
 
     def slice_data(self, t : datetime):
+
         # Get the data module 
         data = self.data_module.data
         # Get the time step 
@@ -126,9 +127,7 @@ class Information:
 
     def compute_portfolio(self, t : datetime,  information_set : dict):
         pass
-
-       
-        
+     
 @dataclass
 class FirstTwoMoments(Information):
     def compute_portfolio(self, t:datetime, information_set):
@@ -196,12 +195,3 @@ class FirstTwoMoments(Information):
         return information_set
 
 
-        
-
-
-
-
-
-
-
-# %%
