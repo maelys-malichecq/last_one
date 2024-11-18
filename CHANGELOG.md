@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v0.2.0 (2024-11-18)
+
+### Features
+
+* feat: implement a test function aer installation ([`ece0dd7`](https://github.com/jfimbett/pybacktestchain/commit/ece0dd70243e9675c9e8dcb254cb1d5bcd6a1df0))
+
+
 ## v0.1.5 (2024-11-18)
 
 ### Bug Fixes
