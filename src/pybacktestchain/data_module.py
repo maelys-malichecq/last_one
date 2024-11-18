@@ -94,50 +94,75 @@ class Information:
     adj_close_column: str = 'Close'
 
     def slice_data(self, t : datetime):
-         # Get the data module 
+
+        # Get the data module 
         data = self.data_module.data
         # Get the time step 
         s = self.s
+
+        # Convert both `t` and the data column to timezone-aware, if needed
+        if t.tzinfo is not None:
+            # If `t` is timezone-aware, make sure data is also timezone-aware
+            data[self.time_column] = pd.to_datetime(data[self.time_column]).dt.tz_localize(t.tzinfo.zone, ambiguous='NaT', nonexistent='NaT')
+        else:
+            # If `t` is timezone-naive, ensure the data is timezone-naive as well
+            data[self.time_column] = pd.to_datetime(data[self.time_column]).dt.tz_localize(None)
+        
         # Get the data only between t-s and t
         data = data[(data[self.time_column] >= t - s) & (data[self.time_column] < t)]
         return data
+
+    def get_prices(self, t : datetime):
+        # gets the prices at which the portfolio will be rebalanced at time t 
+        data = self.slice_data(t)
+        
+        # get the last price for each company
+        prices = data.groupby(self.company_column)[self.adj_close_column].last()
+        # to dict, ticker as key price as value 
+        prices = prices.to_dict()
+        return prices
 
     def compute_information(self, t : datetime):  
         pass
 
     def compute_portfolio(self, t : datetime,  information_set : dict):
         pass
-       
-        
+     
 @dataclass
 class FirstTwoMoments(Information):
-
     def compute_portfolio(self, t:datetime, information_set):
-        mu = information_set['expected_return']
-        Sigma = information_set['covariance_matrix']
+        try:
+            mu = information_set['expected_return']
+            Sigma = information_set['covariance_matrix']
+            gamma = 1 # risk aversion parameter
+            n = len(mu)
+            # objective function
+            obj = lambda x: -x.dot(mu) + gamma/2 * x.dot(Sigma).dot(x)
+            # constraints
+            cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+            # bounds, allow short selling, +- inf 
+            bounds = [(0.0, 1.0)] * n
+            # initial guess, equal weights
+            x0 = np.ones(n) / n
+            # minimize
+            res = minimize(obj, x0, constraints=cons, bounds=bounds)
 
-        gamma = 1 # risk aversion parameter
-        n = len(mu)
-        # objective function
-        obj = lambda x: -x.dot(mu) + gamma/2 * x.dot(Sigma).dot(x)
-        # constraints
-        cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
-        # bounds, allow short selling, +- inf 
-        bounds = [(None, None)] * n
-        # initial guess, equal weights
-        x0 = np.ones(n) / n
-        # minimize
-        res = minimize(obj, x0, constraints=cons, bounds=bounds)
+            # prepare dictionary 
+            portfolio = {k: None for k in information_set['companies']}
 
-        # prepare dictionary 
-        portfolio = {k: None for k in information_set['companies']}
+            # if converged update
+            if res.success:
+                for i, company in enumerate(information_set['companies']):
+                    portfolio[company] = res.x[i]
+            else:
+                raise Exception("Optimization did not converge")
 
-        # if converged update
-        if res.success:
-            for i, company in enumerate(information_set['companies']):
-                portfolio[company] = res.x[i]
-        
-        return portfolio
+            return portfolio
+        except Exception as e:
+            # if something goes wrong return an equal weight portfolio but let the user know 
+            logging.warning("Error computing portfolio, returning equal weight portfolio")
+            logging.warning(e)
+            return {k: 1/len(information_set['companies']) for k in information_set['companies']}
 
     def compute_information(self, t : datetime):
         # Get the data module 
@@ -170,13 +195,3 @@ class FirstTwoMoments(Information):
         return information_set
 
 
-
-
-
-
-
-
-
-
-
-# %%
