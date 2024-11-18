@@ -34,6 +34,9 @@ class Broker:
 
     def initialize_blockchain(self, name: str):
         # Check if the blockchain is already initialized and stored in the blockchain folder
+        # if folder blockchain does not exist, create it
+        if not os.path.exists('blockchain'):
+            os.makedirs('blockchain')
         chains = os.listdir('blockchain')
         ending = f'{name}.pkl'
         if ending in chains:
