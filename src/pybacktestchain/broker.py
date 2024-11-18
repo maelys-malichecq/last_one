@@ -274,6 +274,11 @@ class Backtest:
 
         logging.info(f"Backtest completed. Final portfolio value: {self.broker.get_portfolio_value(info.get_prices(self.final_date))}")
         df = self.broker.get_transaction_log()
+
+        # create backtests folder if it does not exist
+        if not os.path.exists('backtests'):
+            os.makedirs('backtests')
+
         # save to csv, use the backtest name 
         df.to_csv(f"backtests/{self.backtest_name}.csv")
 
