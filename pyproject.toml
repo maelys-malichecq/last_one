@@ -8,14 +8,12 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-pandas = "^2.2.2"
-numpy = "^2.0.1"
-yfinance = "^0.2.41"
-sec-cik-mapper = "^2.1.0"
-
+pandas = "<3.0.0,>=2.2.2"  # Ensuring compatibility
+numpy = ">=1.23.5,<2.0"  # Adjusted for compatibility with other libraries
+yfinance = "<0.3.0,>=0.2.41"
+sec-cik-mapper = "<3.0.0,>=2.1.0"
 scipy = "<1.14.0"
-colorama = "^0.4.6"
-
+colorama = "<0.5.0,>=0.4.6"
 
 [tool.poetry.dev-dependencies]
 
@@ -23,15 +21,15 @@ colorama = "^0.4.6"
 pytest = "^8.3.2"
 python-semantic-release = "^9.8.7"
 
-
 [tool.poetry.group.jupyter.dependencies]
 notebook = "^7.2.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
 [tool.semantic_release] 
 version_variable = "pyproject.toml:version" 
 version_toml = [ 
 "pyproject.toml:tool.poetry.version", 
-] 
+]
