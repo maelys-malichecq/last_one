@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v0.1.3 (2024-11-18)
+
+### Bug Fixes
+
+* fix: small change to pyproject ([`d19ca79`](https://github.com/jfimbett/pybacktestchain/commit/d19ca79c35231cc141797b7256a2d61cf663fe9f))
+
+
 ## v0.1.2 (2024-11-18)
 
 ### Bug Fixes
