@@ -7,6 +7,7 @@ import pickle
 from pybacktestchain.data_module import UNIVERSE_SEC, FirstTwoMoments, get_stocks_data, DataModule, Information
 from pybacktestchain.utils import generate_random_name
 from pybacktestchain.blockchain import Block, Blockchain
+from numba import jit 
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -221,9 +222,7 @@ class Backtest:
     name_blockchain: str = 'backtest'
     verbose: bool = True
     broker = Broker(cash=initial_cash, verbose=verbose)
-
-
-
+    
     def __post_init__(self):
         self.backtest_name = generate_random_name()
         self.broker.initialize_blockchain(self.name_blockchain)

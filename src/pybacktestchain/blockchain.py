@@ -2,6 +2,7 @@ import hashlib
 import time
 from dataclasses import dataclass, field
 import pickle # prefered serialization method
+import os 
 
 @dataclass
 class Block:
@@ -75,11 +76,14 @@ class Blockchain:
             to_return += "-" * 80 + '\n'
         return to_return
     
+    # remove the blockchain
+    def remove_blockchain(self):
+        os.remove(f'blockchain/{self.name}.pkl')
+    
 
 def load_blockchain(name: str):
     with open(f'blockchain/{name}.pkl', 'rb') as f:
         return pickle.load(f)
     
 def remove_blockchain(name: str):
-    import os
     os.remove(f'blockchain/{name}.pkl')
