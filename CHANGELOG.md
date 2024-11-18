@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v0.2.1 (2024-11-18)
+
+### Bug Fixes
+
+* fix: small docs ([`69084c8`](https://github.com/jfimbett/pybacktestchain/commit/69084c89984ab69e2e81a4c9e63471446108436d))
+
+
 ## v0.2.0 (2024-11-18)
 
 ### Features
