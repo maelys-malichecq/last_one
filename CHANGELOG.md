@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v0.1.4 (2024-11-18)
+
+### Bug Fixes
+
+* fix: create folder if doesnt exist ([`b6ab008`](https://github.com/jfimbett/pybacktestchain/commit/b6ab008540f48999a92fcd9372225efc21c25305))
+
+
 ## v0.1.3 (2024-11-18)
 
 ### Bug Fixes
