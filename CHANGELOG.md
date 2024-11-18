@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v0.1.5 (2024-11-18)
+
+### Bug Fixes
+
+* fix: create backtests when required ([`d5aba71`](https://github.com/jfimbett/pybacktestchain/commit/d5aba71ae99178bceb6a6dad3e5093b7fe2dc101))
+
+
 ## v0.1.4 (2024-11-18)
 
 ### Bug Fixes
