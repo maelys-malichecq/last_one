@@ -196,6 +196,45 @@ class FirstTwoMoments(Information):
         return information_set
 
 
+@dataclass
+class MomentumStrategy(Information):
+    # Default look-back period in days
+    look_back_period: int = 90   
+
+    def compute_portfolio(self, t:datetime, information_set):
+        # Define look-back period start
+        look_back_start = t - timedelta(days=self.look_back_period)
+
+        # Get the data module 
+        data = self.data_module.data
+
+        # Convert dataframe into datetime format
+        data[self.time_column] = pd.to_datetime(data[self.time_column])
+
+        # Get the data between look_back_start and t 
+        sliced_data = data[(data[self.time_column] >= look_back_start) & (data[self.time_column] < t)]
+
+        if sliced_data.empty:
+            logging.warning(f"No data available for look-back period ending at time {t}")
+            return {}
+        
+        # Past returns 
+        sliced_data['return'] = sliced_data.groupby(self.company_column)[self.adj_close_column].pct_change()
+        mean_returns = sliced_data.groupby(self.company_column)['return'].mean()
+
+        # We don't want negative or null returns so we exclude them
+            # negative returns are set to 0
+        mean_returns = mean_returns.clip(lower = 0) 
+        total_return = mean_returns.sum()
+
+        if total_return == 0:
+            logging.warning(f"For the period ending at time {t}, all returns are zero or negative")
+            return {ticker: 1/len(mean_returns) for ticker in mean_returns.index}
+
+        # Calculate weights and put them in a dictionnary
+        weights = (mean_returns / total_return).to_dict()
+        return weights
+ 
         
 
 
