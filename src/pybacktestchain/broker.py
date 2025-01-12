@@ -5,9 +5,9 @@ from datetime import datetime
 
 import os 
 import pickle
-from pybacktestchain.data_module import UNIVERSE_SEC, FirstTwoMoments, get_stocks_data, DataModule, Information
-from pybacktestchain.utils import generate_random_name
-from pybacktestchain.blockchain import Block, Blockchain
+from data_module import UNIVERSE_SEC, FirstTwoMoments, get_stocks_data, DataModule, Information
+from utils import generate_random_name
+from blockchain import Block, Blockchain
 from numba import jit 
 
 # Setup logging
@@ -237,7 +237,7 @@ class Backtest:
         self.broker.initialize_blockchain(self.name_blockchain)
 
     def run_backtest(self):
-        logging.info(f"Running backtest from {self.initial_date} to {self.final_date}.")
+        logging.info(f"RUNNIIING backtest from {self.initial_date} to {self.final_date}.")
         logging.info(f"Retrieving price data for universe")
         self.risk_model = self.risk_model(threshold=0.1)
         # self.initial_date to yyyy-mm-dd format
