@@ -237,6 +237,7 @@ class Backtest:
         self.broker.initialize_blockchain(self.name_blockchain)
 
     def run_backtest(self):
+        print("lalaala")
         logging.info(f"RUNNIIING backtest from {self.initial_date} to {self.final_date}.")
         logging.info(f"Retrieving price data for universe")
         self.risk_model = self.risk_model(threshold=0.1)
